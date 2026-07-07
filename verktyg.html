@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mängdare – Betong, Spackel & Plankkalkyl</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121a2b;
+      --muted: #a7b0c2;
+      --text: #eaf0ff;
+      --accent: #4da3ff;
+      --accent-2: #6cffc7;
+      --danger: #ff6b6b;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 20% -10%, #1b2a4a 0%, #0b1220 50%, #070c17 100%);
+      color: var(--text);
+      display: grid;
+      place-items: start center;
+      padding: 24px;
+    }
+    .app {
+      width: min(980px, 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.07);
+      box-shadow: var(--shadow);
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    header {
+      padding: 20px 22px;
+      background: linear-gradient(90deg, rgba(77,163,255,.15), rgba(108,255,199,.10));
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      display: flex; gap: 16px; align-items: center; justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    header h1 { font-size: 20px; margin: 0; letter-spacing: 0.3px; }
+    header .specs { font-size: 12.5px; color: var(--muted); }
+    .tabs { display: flex; gap: 8px; padding: 14px 14px 0; flex-wrap: wrap; }
+    .tab-btn {
+      appearance: none; border: 1px solid rgba(255,255,255,.12);
+      background: #0f1627; color: var(--text); padding: 10px 14px; border-radius: 999px; cursor: pointer;
+      font-weight: 600; letter-spacing: .2px; transition: .2s transform, .2s background, .2s border-color;
+    }
+    .tab-btn[aria-selected="true"] { background: #17223a; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(77,163,255,.15) inset; }
+    .tab-btn:hover { transform: translateY(-1px); }
+
+    .panels { padding: 14px; }
+    .panel { display: none; }
+    .panel.active { display: grid; grid-template-columns: 1.2fr .8fr; gap: 16px; }
+    @media (max-width: 820px) { .panel.active { grid-template-columns: 1fr; } }
+
+    .card { background: var(--panel); border: 1px solid rgba(255,255,255,.08); border-radius: var(--radius); padding: 16px; }
+    .card h2 { margin: 0 0 8px; font-size: 18px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .grid-1 { display: grid; gap: 12px; }
+
+    label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
+    input[type="number"], select { width: 100%; box-sizing: border-box; padding: 12px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: #0e1526; color: var(--text); font-size: 15px; }
+    input[type="range"] { width: 100%; }
+
+    .row { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 10px; }
+
+    .out {
+      display: grid; gap: 10px;
+    }
+    .out .kpi {
+      display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center;
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 12px 14px;
+    }
+    .out .kpi .label { color: var(--muted); font-size: 12.5px; }
+    .out .kpi .value { font-size: 20px; font-weight: 700; }
+
+    .hint { font-size: 12px; color: var(--muted); }
+    .tag { font-size: 11px; padding: 4px 8px; border-radius: 999px; background: rgba(108,255,199,.15); color: #cffff0; border: 1px solid rgba(108,255,199,.35); }
+
+    footer { padding: 10px 16px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    footer .links a { color: var(--accent); text-decoration: none; border-bottom: 1px dashed rgba(77,163,255,.5); }
+    .error { color: var(--danger); font-size: 13px; }
+
+    /* Plank-resultat layout */
+    .plank-grid { display: grid; gap: 10px; }
+    .plank-card {
+      display: grid; gap: 6px;
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 12px 14px;
+    }
+    .plank-card .title { font-size: 14px; color: var(--muted); }
+    .plank-card .num { font-size: 26px; font-weight: 800; }
+    .pill { font-size: 11px; padding: 4px 8px; border-radius: 999px; background: rgba(77,163,255,.15); color: #d9ebff; border: 1px solid rgba(77,163,255,.35); }
+    .length-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .check {
+      display: flex; align-items: center; gap: 8px; margin: 0; padding: 11px 12px;
+      border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: #0e1526;
+      color: var(--text); font-size: 14px; cursor: pointer;
+    }
+    .check input { width: 16px; height: 16px; accent-color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header>
+      <h1>📏 Mängdare – Betong, Spackel & Plankkalkyl</h1>
+      <div class="specs">
+        Betong ≈ <b>2.0 kg/m²/mm</b> · Spackel ≈ <b>1.8 kg/m²/mm</b> · Plank: välj längd 4,2 / 4,8 / 4,5 / 3,6 m
+      </div>
+    </header>
+
+    <div class="tabs" role="tablist">
+      <button class="tab-btn" role="tab" aria-selected="true" data-tab="betong" id="tab-betong">Grovbetong 20 kg</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="spackel" id="tab-spackel">Flytspackel Snabb Fiber 20 kg</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="plank" id="tab-plank">Plankkalkyl 28×120</button>
+    </div>
+
+    <div class="panels">
+      <!-- Grovbetong Panel -->
+      <section class="panel active" id="panel-betong" role="tabpanel" aria-labelledby="tab-betong">
+        <div class="card">
+          <h2>Inmatning</h2>
+          <p class="muted">Fyll i yta och skikttjocklek. Du kan även lägga på spillmarginal.</p>
+          <div class="grid">
+            <div>
+              <label for="betong-area">Yta (m²)</label>
+              <input type="number" id="betong-area" min="0" step="0.01" placeholder="t.ex. 12.5" />
+            </div>
+            <div>
+              <label for="betong-thk">Tjocklek (cm)</label>
+              <input type="number" id="betong-thk" min="0" step="0.1" placeholder="t.ex. 6" />
+            </div>
+          </div>
+          <div class="grid">
+            <div>
+              <label for="betong-spill">Spill (%)</label>
+              <input type="number" id="betong-spill" min="0" max="20" step="1" value="5" />
+              <p class="hint">Rekommenderat 3–10% beroende på jobb och kanter.</p>
+            </div>
+            <div class="row">
+              <div></div>
+              <button class="tab-btn" onclick="calc('betong')">Beräkna</button>
+            </div>
+          </div>
+          <p id="betong-error" class="error" hidden>Kontrollera inmatade värden.</p>
+        </div>
+        <div class="card out" aria-live="polite">
+          <h2>Resultat</h2>
+          <div class="kpi"><span class="label">Total mängd (kg)</span><span class="value" id="betong-kg">–</span></div>
+          <div class="kpi"><span class="label">Antal säckar (20 kg)</span><span class="value" id="betong-sacks">–</span></div>
+          <div class="kpi"><span class="label">Volym (liter)</span><span class="value" id="betong-liters">–</span></div>
+          <div class="kpi"><span class="label">Åtgångsfaktor</span><span class="value"><span class="tag">2.0 kg/m²/mm</span></span></div>
+          <p class="hint">Volymen beräknas som m² × cm × 10. Antal säckar avrundas <b>uppåt</b>.</p>
+        </div>
+      </section>
+
+      <!-- Flytspackel Panel -->
+      <section class="panel" id="panel-spackel" role="tabpanel" aria-labelledby="tab-spackel">
+        <div class="card">
+          <h2>Inmatning</h2>
+          <p class="muted">Fyll i yta och skikttjocklek. Lägg ev. på spill.</p>
+          <div class="grid">
+            <div>
+              <label for="spackel-area">Yta (m²)</label>
+              <input type="number" id="spackel-area" min="0" step="0.01" placeholder="t.ex. 18" />
+            </div>
+            <div>
+              <label for="spackel-thk">Tjocklek (mm)</label>
+              <input type="number" id="spackel-thk" min="0" step="1" placeholder="t.ex. 15" />
+            </div>
+          </div>
+          <div class="grid">
+            <div>
+              <label for="spackel-spill">Spill (%)</label>
+              <input type="number" id="spackel-spill" min="0" max="20" step="1" value="5" />
+            </div>
+            <div class="row">
+              <div></div>
+              <button class="tab-btn" onclick="calc('spackel')">Beräkna</button>
+            </div>
+          </div>
+          <p id="spackel-error" class="error" hidden>Kontrollera inmatade värden.</p>
+        </div>
+        <div class="card out" aria-live="polite">
+          <h2>Resultat</h2>
+          <div class="kpi"><span class="label">Total mängd (kg)</span><span class="value" id="spackel-kg">–</span></div>
+          <div class="kpi"><span class="label">Antal säckar (20 kg)</span><span class="value" id="spackel-sacks">–</span></div>
+          <div class="kpi"><span class="label">Volym (liter)</span><span class="value" id="spackel-liters">–</span></div>
+          <div class="kpi"><span class="label">Åtgångsfaktor</span><span class="value"><span class="tag">1.8 kg/m²/mm</span></span></div>
+          <p class="hint">Flytspackel räknas direkt i mm. Antal säckar avrundas <b>uppåt</b>.</p>
+        </div>
+      </section>
+
+      <!-- Plankkalkyl Panel -->
+      <section class="panel" id="panel-plank" role="tabpanel" aria-labelledby="tab-plank">
+        <div class="card">
+          <h2>Inmatning</h2>
+          <p class="muted">Skriv in ytan i m² och välj vilka planklängder du vill jämföra. Förvalda alternativ är <b>4,2 m</b> och <b>4,8 m</b>.</p>
+          <div class="grid">
+            <div>
+              <label for="plank-area">Yta (m²)</label>
+              <input id="plank-area" type="number" min="0" step="0.01" placeholder="t.ex. 36.5">
+            </div>
+            <div>
+              <label for="plank-width">Täckt bredd per planka (mm)</label>
+              <input id="plank-width" type="number" min="1" step="1" value="120">
+              <p class="hint">Standard för 28×120 är 120&nbsp;mm. Justera om du har spalt/spår som minskar täckande bredd.</p>
+            </div>
+          </div>
+          <div class="grid">
+            <div>
+              <label for="plank-waste">Spill/överkant (%)</label>
+              <input id="plank-waste" type="number" min="0" step="1" value="0">
+              <p class="hint">Valfritt. Lägg till marginal för kap/spill (t.ex. 7–10%).</p>
+            </div>
+            <div>
+              <label>Välj planklängder</label>
+              <div class="length-options" aria-label="Välj planklängder">
+                <label class="check"><input type="checkbox" name="plank-length" value="4.2" data-label="4,2 m" checked> 4,2 m</label>
+                <label class="check"><input type="checkbox" name="plank-length" value="4.8" data-label="4,8 m" checked> 4,8 m</label>
+                <label class="check"><input type="checkbox" name="plank-length" value="4.5" data-label="4,5 m"> 4,5 m</label>
+                <label class="check"><input type="checkbox" name="plank-length" value="3.6" data-label="3,6 m"> 3,6 m</label>
+              </div>
+              <p class="hint">Du kan markera en eller flera längder. Resultatet visas i samma ordning.</p>
+            </div>
+          </div>
+          <div class="row">
+            <div></div>
+            <button class="tab-btn" onclick="calcPlank()">Beräkna</button>
+          </div>
+          <p id="plank-error" class="error" hidden>Kontrollera inmatade värden.</p>
+        </div>
+
+        <div class="card out" aria-live="polite">
+          <h2>Resultat</h2>
+          <div class="plank-grid" id="plank-results">
+            <div class="plank-card">
+              <div class="title">Välj längder och klicka på Beräkna <span class="pill">28×120</span></div>
+              <div class="num">–</div>
+              <div class="muted">Resultatet visas här.</div>
+            </div>
+          </div>
+          <p class="hint">Formel: Antal = ⌈ (yta × (1 + spill)) / (bredd(m) × längd(m)) ⌉. Ex: 120&nbsp;mm ⇒ 0,12&nbsp;m.</p>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <div class="hint">Obs! Kontrollera alltid mot aktuellt produktblad och följ minsta/max skikttjocklek för respektive produkt.</div>
+      <div class="links">
+        <a href="#" onclick="window.open('https://www.bauhaus.se/grovbetong-combimix-probau-20kg-sack','_blank')">Grovbetong – produktsida</a> ·
+        <a href="#" onclick="window.open('https://www.bauhaus.se/probau-flytspackel-snabb-fiber-20kg','_blank')">Flytspackel – produktsida</a>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // ===== Gemensamma helpers =====
+    const svInt = n => new Intl.NumberFormat('sv-SE').format(n);
+    const svDec = (n, digits=2) => new Intl.NumberFormat('sv-SE', { maximumFractionDigits: digits }).format(n);
+
+    // ===== Betong/Spackel (från din befintliga app) =====
+    const FACTOR = {
+      betong: 2.0, // kg per m² per mm (Grovbetong)
+      spackel: 1.8 // kg per m² per mm (Flytspackel Snabb Fiber)
+    };
+
+    function mmFromInput(material, val) {
+      if (material === 'betong') return (parseFloat(val) || 0) * 10; // cm -> mm
+      return parseFloat(val) || 0; // redan mm
+    }
+
+    function calc(material) {
+      const area = parseFloat(document.getElementById(material + '-area').value);
+      const thkMm = mmFromInput(material, document.getElementById(material + '-thk').value);
+      const spill = Math.max(0, Math.min(100, parseFloat(document.getElementById(material + '-spill').value) || 0));
+
+      const err = document.getElementById(material + '-error');
+      if (!isFinite(area) || !isFinite(thkMm) || area <= 0 || thkMm <= 0) {
+        err.hidden = false;
+        setOutputs(material, '–', '–', '–');
+        return;
+      }
+      err.hidden = true;
+
+      let kg = area * thkMm * FACTOR[material];
+      kg *= (1 + spill / 100);
+
+      const sacks = Math.ceil(kg / 20);
+      const liters = area * (thkMm / 10) * 10;
+
+      setOutputs(material, svDec(kg, 1), sacks.toString(), svDec(liters, 1));
+    }
+
+    function setOutputs(material, kg, sacks, liters) {
+      document.getElementById(material + '-kg').textContent = kg;
+      document.getElementById(material + '-sacks').textContent = sacks;
+      document.getElementById(material + '-liters').textContent = liters;
+    }
+
+    // ===== Plankkalkyl (anpassad till samma stil) =====
+    function toMeters(mm){ return mm/1000; }
+    function calcForLength(area, width_m, length_m, waste){
+      const effectiveArea = area * (1 + waste);
+      const perBoard = width_m * length_m;
+      const qty = Math.ceil(effectiveArea / perBoard);
+      const lm = qty * length_m;
+      return {qty, lm};
+    }
+
+    function calcPlank(){
+      const area = parseFloat(String(document.getElementById('plank-area').value).replace(",", "."));
+      const width_mm = parseFloat(document.getElementById('plank-width').value);
+      const waste_pct = parseFloat(document.getElementById('plank-waste').value);
+      const selectedLengths = [...document.querySelectorAll('input[name="plank-length"]:checked')]
+        .map(input => ({ value: parseFloat(input.value), label: input.dataset.label }));
+
+      const err = document.getElementById('plank-error');
+      const results = document.getElementById('plank-results');
+
+      if(!isFinite(area) || area <= 0 || !isFinite(width_mm) || width_mm <= 0 || selectedLengths.length === 0){
+        err.hidden = false;
+        results.innerHTML = `
+          <div class="plank-card">
+            <div class="title">Ingen beräkning <span class="pill">28×120</span></div>
+            <div class="num">–</div>
+            <div class="muted">Fyll i yta, bredd och välj minst en planklängd.</div>
+          </div>`;
+        return;
+      }
+      err.hidden = true;
+
+      const width_m = toMeters(width_mm);
+      const waste = !isFinite(waste_pct) ? 0 : Math.max(0, waste_pct) / 100;
+
+      results.innerHTML = selectedLengths.map((length, index) => {
+        const calc = calcForLength(area, width_m, length.value, waste);
+        const optionLetter = String.fromCharCode(65 + index);
+        return `
+          <div class="plank-card">
+            <div class="title">Alternativ ${optionLetter} – längd ${length.label} <span class="pill">28×120</span></div>
+            <div class="num">${svInt(calc.qty)} st plankor</div>
+            <div class="muted">${svDec(calc.lm)} löpmeter totalt</div>
+          </div>`;
+      }).join('');
+    }
+
+    // ===== Tabs =====
+    const tabs = document.querySelectorAll('.tab-btn[role="tab"]');
+    tabs.forEach(btn => btn.addEventListener('click', () => {
+      tabs.forEach(b => b.setAttribute('aria-selected', 'false'));
+      btn.setAttribute('aria-selected', 'true');
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + tab).classList.add('active');
+    }));
+  </script>
+</body>
+</html>
